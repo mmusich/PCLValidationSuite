@@ -15,6 +15,25 @@
 #include <fstream>      // std::ofstream
 
 //*****************************************************//
+std::string getRun(TFile* f)
+//*****************************************************//
+{
+  std::string theRun = "";
+  TDirectory *dir =(TDirectory*)f->Get("DQMData");
+  TIter next(dir->GetListOfKeys());
+  TKey *key;
+  while ((key = (TKey*)next())){
+    TObject* obj = key->ReadObj();
+    std::string name = obj->GetName();
+    if(name.find("Run") != string::npos){
+      theRun= name;
+    }
+  }
+  return theRun;
+}
+
+
+//*****************************************************//
 Double_t getMaximum(TObjArray *array)
 //*****************************************************//
 {
@@ -40,9 +59,16 @@ void compareAll(TString file1,TString file2, TString leg1, TString leg2)
 {
 
   TFile *f1 = TFile::Open(file1);
-  TFile *f2 = TFile::Open(file2);
+  auto string1 = getRun(f1);
 
-  f1->cd("DQMData/Run 276092/AlCaReco/Run summary/");
+  TFile *f2 = TFile::Open(file2);
+  auto string2 = getRun(f2);
+
+  std::cout << string1 << " "<< string2 << std::endl;
+
+  assert(string1==string2);
+
+  f1->cd(("DQMData/"+string1+"/AlCaReco/Run summary/").c_str());
 
   int i=0;
   int j=0;
@@ -64,13 +90,13 @@ void compareAll(TString file1,TString file2, TString leg1, TString leg2)
       continue;
     }
     if ( obj->IsA()->InheritsFrom("TDirectory") ){
-      f1->cd(("DQMData/Run 276092/AlCaReco/Run summary/"+name).c_str());
+      f1->cd(("DQMData/"+string1+"/AlCaReco/Run summary/"+name).c_str());
       TIter nextkey(gDirectory->GetListOfKeys());                                                                             
       while ( (key = (TKey*)nextkey()) ) { 
 	obj = key->ReadObj();                                                                                         
 	if (obj->IsA()->InheritsFrom("TH1")) {                                                                                
 	  TH1* h = (TH1*)obj;                                                                              
-	  TString fullpath = "DQMData/Run 276092/AlCaReco/Run summary/"+name+"/"+h->GetName();
+	  TString fullpath = "DQMData/"+string1+"/AlCaReco/Run summary/"+name+"/"+h->GetName();
 	  //std::cout << "j: " << j << " "<< h->GetName() <<" "<< fullpath << std::endl;
 	  ++j;
 	  if(TString(h->GetName()).Contains("Charge_Vs_Index") ) continue;
