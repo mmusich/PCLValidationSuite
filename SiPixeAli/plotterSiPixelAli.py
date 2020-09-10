@@ -88,16 +88,12 @@ def randomName():
     return "%x"%(randint(0, maxint))
 
 def runFromFilename(filename):
-    return 325174
-    # m = re.match(".*Run(\d+).root", filename)
-    # if m:
-    #     return int(m.group(1))
-    # m2 = re.match(".*/Results(\d+)[^\d].*", filename) # for pseudo
-    # if m2:
-    #     return int(m2.group(1))
-    # else:
-    #     print "Could not find run number for file", filename
-    # return 0
+    tokens = filename.split("_")
+    for tok in tokens:
+        if "R" in tok:
+            return tok[-6:]
+    print "Could not find run number for file", filename
+    return 0
 
 def getFromFile(filename, objectname):
     print filename
@@ -105,7 +101,7 @@ def getFromFile(filename, objectname):
     #print f.ls()
     if f.GetSize()<5000: # DQM files sometimes are empty
         return None
-    h = f.Get("DQMData/Run 325174/AlCaReco/Run summary/SiPixelAli/"+objectname)
+    h = f.Get("DQMData/Run "+runFromFilename(filename)+"/AlCaReco/Run summary/SiPixelAli/"+objectname)
     print h.GetName() 
     h = ROOT.gROOT.CloneObject(h)
     return h
@@ -113,7 +109,7 @@ def getFromFile(filename, objectname):
 def sortedDict(d):
     return collections.OrderedDict(sorted(d.items(), key=lambda t: t[0]))
 
-def getInputHists(searchPath="./*.root"):
+def getInputHists(searchPath="./DQM*.root"):
     hists = {}
     for filename in glob.glob(searchPath):
         runNr = runFromFilename(filename)
@@ -145,9 +141,13 @@ def drawHists(hmap, savename, run):
     dbUpdated = False
     for ih, hname in enumerate(hnames):
         c.cd(ih+1)
+        c.cd(ih+1).SetTopMargin(1.)
+        c.cd(ih+1).SetLeftMargin(0.1)
+        c.cd(ih+1).SetRightMargin(0.02)
         h = hmap[hname]
         h.SetLineColor(ROOT.kBlack)
         h.SetFillColor(ROOT.kGreen-7)
+        h.GetYaxis().SetTitleOffset(0.9)
         cutStatus = exceedsCuts(h)
         if cutStatus == "update":
             h.SetFillColor(ROOT.kOrange-9)
@@ -170,8 +170,8 @@ def drawHists(hmap, savename, run):
     c.cd(0)
     text = ROOT.TLatex()
     text.SetTextSize(.75*text.GetTextSize())
-    text.DrawLatexNDC(.05, .967, "#scale[1.2]{#font[61]{CMS}} #font[52]{Private Work}")
-    text.DrawLatexNDC(.82, .967, "Run {} (13TeV)".format(run))
+    text.DrawLatexNDC(.05, .95, "#scale[1.2]{#font[61]{CMS}} #font[52]{Internal}")
+    text.DrawLatexNDC(.82, .95, "Run {} (13TeV)".format(run))
     save(savename, plotDir,[".png"])
 
 if __name__ == "__main__":
